@@ -1,16 +1,26 @@
-# React + Vite
+# WebGen Agent Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Single-page React + Vite + Tailwind control panel for `gemini-webgen-agent`.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Settings modal (localStorage-backed): backend URL, email, API key, GitHub username
+- Live backend health indicator (`/health`)
+- Task submission form with task slug sanitization and deployment URL preview
+- Drag-and-drop attachments (images, CSV, Markdown) converted to base64 data URIs
+- Deterministic result polling (`/result/{task_id}`) with step tracker
+- Collapsible live logs panel (`/logs?lines=50`)
+- Success/error cards with deployment links and retry/reset actions
 
-## React Compiler
+## Run locally
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev
+```
 
-## Expanding the ESLint configuration
+## Build
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm run build
+```
