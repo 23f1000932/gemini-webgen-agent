@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = Field("", env="GEMINI_API_KEY")
     GITHUB_TOKEN: str = Field("", env="GITHUB_TOKEN")
     GITHUB_USERNAME: str = Field("", env="GITHUB_USERNAME")
-    STUDENT_SECRET: str = Field("", env="STUDENT_SECRET")
+    # Optional API key for header-based auth (X-API-Key). Leave empty to disable auth.
+    API_KEY: str = Field("", env="API_KEY")
     LOG_FILE_PATH: str = Field("logs/app.log", env="LOG_FILE_PATH")
     MAX_CONCURRENT_TASKS: int = Field(2, env="MAX_CONCURRENT_TASKS")
     KEEP_ALIVE_INTERVAL_SECONDS: int = Field(30, env="KEEP_ALIVE_INTERVAL_SECONDS")
@@ -70,25 +71,30 @@ class Attachment(BaseModel):
     url: str  # data URI or http(s) url
 
 class TaskRequest(BaseModel):
-    task: str
-    email: str
-    round: int
-    brief: str
-    evaluation_url: str
-    nonce: str
-    secret: str
+    task: str            # Unique task/project ID — becomes the GitHub repo name
+    email: str           # Owner email (stored in metadata only)
+    round: int = 1       # 1 = fresh generate, 2+ = surgical update on existing repo
+    brief: str           # Natural-language description of the web app to build
     attachments: List[Attachment] = []
 
 # ------------------------- App & Globals -------------------------
-app = FastAPI(title="Automated Task Receiver & Processor", description="LLM-driven code generation and deployment")
+app = FastAPI(
+    title="gemini-webgen-agent",
+    description="Autonomous LLM-powered web app generator and GitHub Pages deployer.",
+    version="1.0.0",
+)
 background_tasks_list: List[asyncio.Task] = []
 task_semaphore = asyncio.Semaphore(settings.MAX_CONCURRENT_TASKS)
 last_received_task: Optional[dict] = None
+task_results: dict = {}  # task_id -> deployment result or error
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent"
 
 # ------------------------- Utility -------------------------
-def verify_secret(secret_from_request: str) -> bool:
-    return secret_from_request == settings.STUDENT_SECRET
+def check_api_key(request: Request) -> bool:
+    """Returns True if auth passes. Auth is skipped when API_KEY is not configured."""
+    if not settings.API_KEY:
+        return True  # auth disabled
+    return request.headers.get("X-API-Key", "") == settings.API_KEY
 
 def safe_makedirs(path: str):
     os.makedirs(path, exist_ok=True)
@@ -380,53 +386,18 @@ async def call_llm_round2_surgical_update(task_id: str, brief: str, existing_ind
     result["LICENSE"] = result.get("LICENSE") or ""
     return result
 
-# ------------------------- Notifier -------------------------
-async def notify_evaluation_server(evaluation_url: str, email: str, task_id: str, round_index: int, nonce: str, repo_url: str, commit_sha: str, pages_url: str) -> bool:
-    payload = {
-        "email": email,
-        "task": task_id,
-        "round": round_index,
-        "nonce": nonce,
-        "repo_url": repo_url,
-        "commit_sha": commit_sha,
-        "pages_url": pages_url
-    }
-    max_retries = 3
-    base_delay = 1
-    logger.info(f"[NOTIFY] Notifying evaluation server at {evaluation_url}")
-    for attempt in range(max_retries):
-        try:
-            async with httpx.AsyncClient(timeout=10) as client:
-                resp = await client.post(evaluation_url, json=payload)
-                resp.raise_for_status()
-                logger.info(f"[NOTIFY] Notification succeeded: {resp.status_code}")
-                flush_logs()
-                return True
-        except httpx.HTTPStatusError as e:
-            logger.warning(f"[NOTIFY] HTTP error attempt {attempt+1}: {e}")
-        except httpx.RequestError as e:
-            logger.warning(f"[NOTIFY] Request error attempt {attempt+1}: {e}")
-        if attempt < max_retries - 1:
-            await asyncio.sleep(base_delay * (2 ** attempt))
-    logger.error("[NOTIFY] Failed to notify evaluation server after retries.")
-    flush_logs()
-    return False
-
 # ------------------------- Main orchestration -------------------------
 async def generate_files_and_deploy(task_data: TaskRequest):
     acquired = False
+    task_id = task_data.task
     try:
         await task_semaphore.acquire()
         acquired = True
-        logger.info(f"[PROCESS START] Task: {task_data.task} Round: {task_data.round}")
+        logger.info(f"[PROCESS START] Task: {task_id} Round: {task_data.round}")
         flush_logs()
 
-        task_id = task_data.task
-        email = task_data.email
         round_index = task_data.round
         brief = task_data.brief
-        evaluation_url = task_data.evaluation_url
-        nonce = task_data.nonce
         attachments = task_data.attachments or []
 
         repo_name = task_id.replace(" ", "-").lower()
@@ -472,7 +443,6 @@ async def generate_files_and_deploy(task_data: TaskRequest):
         if round_index == 1:
             logger.info("[WORKFLOW] Round 1: full generation")
 
-            # Add filenames info directly to the LLM prompt
             enriched_brief = f"{brief}\n\n{attachment_descriptions}".strip()
 
             system_prompt = (
@@ -508,7 +478,7 @@ async def generate_files_and_deploy(task_data: TaskRequest):
 
         # --- Round 2+: Surgical Update ---
         else:
-            logger.info("[WORKFLOW] Round 2+: surgical update (Base.py style). Loading existing index.html only.")
+            logger.info("[WORKFLOW] Round 2+: surgical update. Loading existing index.html only.")
             existing_index_html = ""
             idx_path = os.path.join(local_path, "index.html")
             if os.path.exists(idx_path):
@@ -520,13 +490,12 @@ async def generate_files_and_deploy(task_data: TaskRequest):
                     logger.warning(f"[WORKFLOW] Could not read existing index.html: {e}")
                     existing_index_html = ""
 
-            # Add attachments info to round 2 prompt as well
             brief_with_attachments = f"{brief}\n\n{attachment_descriptions}".strip()
             generated = await call_llm_round2_surgical_update(
                 task_id=task_id, brief=brief_with_attachments, existing_index_html=existing_index_html
             )
 
-            # Preserve README/LICENSE if LLM didn’t return them
+            # Preserve README/LICENSE if LLM didn't return them
             readme_path = os.path.join(local_path, "README.md")
             license_path = os.path.join(local_path, "LICENSE")
             if not generated.get("README.md") and os.path.exists(readme_path):
@@ -545,29 +514,23 @@ async def generate_files_and_deploy(task_data: TaskRequest):
         # Commit and publish
         deployment_info = await commit_and_publish(repo, task_id, round_index, repo_name)
 
-        # Notify evaluation server
-        await notify_evaluation_server(
-            evaluation_url=evaluation_url,
-            email=email,
-            task_id=task_id,
-            round_index=round_index,
-            nonce=nonce,
-            repo_url=deployment_info["repo_url"],
-            commit_sha=deployment_info["commit_sha"],
-            pages_url=deployment_info["pages_url"],
-        )
-
+        # Store deployment result for polling via GET /result/{task_id}
+        task_results[task_id] = {
+            "status": "done",
+            "repo_url": deployment_info["repo_url"],
+            "pages_url": deployment_info["pages_url"],
+            "commit_sha": deployment_info["commit_sha"],
+        }
         logger.info(f"[DEPLOYMENT] Success. Repo: {deployment_info['repo_url']} Pages: {deployment_info['pages_url']}")
 
     except Exception as exc:
-        logger.exception(f"[CRITICAL FAILURE] Task {getattr(task_data, 'task', 'unknown')} failed: {exc}")
+        logger.exception(f"[CRITICAL FAILURE] Task {task_id} failed: {exc}")
+        task_results[task_id] = {"status": "failed", "error": str(exc)}
     finally:
         if acquired:
             task_semaphore.release()
         flush_logs()
-        logger.info(
-            f"[PROCESS END] Task: {getattr(task_data, 'task', 'unknown')} Round: {getattr(task_data, 'round', 'unknown')}"
-        )
+        logger.info(f"[PROCESS END] Task: {task_id} Round: {getattr(task_data, 'round', 'unknown')}")
 
 
 # ------------------------- Endpoint handlers -------------------------
@@ -584,12 +547,15 @@ def _task_done_callback(task: asyncio.Task):
     finally:
         flush_logs()
 
-@app.post("/ready", status_code=200)
+@app.post("/ready", status_code=202)
 async def receive_task(task_data: TaskRequest, request: Request):
+    """Submit a task for generation and deployment. Responds immediately; poll GET /result/{task_id} for the outcome."""
     global last_received_task, background_tasks_list
-    if not verify_secret(task_data.secret):
+
+    # Optional header-based auth
+    if not check_api_key(request):
         logger.warning(f"Unauthorized attempt for task {task_data.task} from {request.client.host if request.client else 'unknown'}")
-        raise HTTPException(status_code=401, detail="Unauthorized: Secret mismatch")
+        raise HTTPException(status_code=401, detail="Unauthorized: Invalid or missing X-API-Key header.")
 
     last_received_task = {
         "task": task_data.task,
@@ -599,6 +565,9 @@ async def receive_task(task_data: TaskRequest, request: Request):
         "time": datetime.utcnow().isoformat() + "Z"
     }
 
+    # Mark as pending immediately so /result/{task_id} returns pending, not 404
+    task_results[task_data.task] = {"status": "pending"}
+
     bg_task = asyncio.create_task(generate_files_and_deploy(task_data))
     bg_task.add_done_callback(_task_done_callback)
     background_tasks_list.append(bg_task)
@@ -606,11 +575,23 @@ async def receive_task(task_data: TaskRequest, request: Request):
     logger.info(f"Received task {task_data.task}. Background processing started.")
     flush_logs()
 
-    return JSONResponse(status_code=200, content={"status": "ready", "message": f"Task {task_data.task} received and processing started."})
+    return JSONResponse(status_code=202, content={
+        "status": "queued",
+        "task_id": task_data.task,
+        "message": f"Generation started. Poll GET /result/{task_data.task} for deployment details."
+    })
+
+@app.get("/result/{task_id}")
+async def get_result(task_id: str):
+    """Poll the deployment result for a submitted task."""
+    result = task_results.get(task_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"No task found with id '{task_id}'.")
+    return result
 
 @app.get("/")
 async def root():
-    return {"message": "Task Receiver Service running. POST /ready to submit."}
+    return {"message": "gemini-webgen-agent running. POST /ready to submit a task. See /docs for full API reference."}
 
 @app.get("/status")
 async def get_status():
