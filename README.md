@@ -1,6 +1,6 @@
 # 🤖 gemini-webgen-agent
 
-An **LLM-powered autonomous agent** that receives task briefs via HTTP, generates complete single-file web applications using **Google Gemini AI**, and automatically deploys them to **GitHub Pages** — fully hands-free.
+An **LLM-powered autonomous agent** with a React control panel that receives task briefs via HTTP, generates complete single-file web applications using **Google Gemini AI**, and automatically deploys them to **GitHub Pages** — fully hands-free.
 
 ---
 
@@ -67,6 +67,34 @@ Client
 
 ---
 
+## 🖥️ Frontend (Control Panel)
+
+The repository includes a `frontend/` single-page dashboard used to submit tasks and monitor progress in real time.
+
+### Tech used
+
+| Layer | Used in frontend |
+|---|---|
+| Framework | React 19 |
+| Build tool | Vite 8 |
+| Styling | Tailwind CSS + custom theme tokens |
+| Language | JavaScript (ES Modules) |
+| Data flow | React hooks (`useState`, `useEffect`, custom hooks) |
+| HTTP | Browser Fetch API |
+| Linting | ESLint 9 |
+
+### Frontend features
+
+- Settings modal persisted in `localStorage` (backend URL, email, API key, GitHub username)
+- Live backend health indicator via `GET /health`
+- Task submit flow to `POST /ready` with optional `X-API-Key`
+- Drag-and-drop attachment upload (converted to data URI)
+- Automatic polling via `GET /result/{task_id}`
+- Live logs panel via `GET /logs?lines=50`
+- Deployment URL preview from GitHub username + task slug
+
+---
+
 ## 📂 Project Structure
 
 ```
@@ -76,6 +104,10 @@ Client
 ├── Dockerfile               # Container config (targets Hugging Face Spaces, port 7860)
 ├── .gitignore
 ├── README.md
+├── frontend/                # React + Vite control panel
+│   ├── src/
+│   ├── package.json
+│   └── tailwind.config.js
 └── generated_tasks/         # Auto-created; generated files per task (gitignored)
     └── <task-id>/
         ├── index.html
@@ -92,6 +124,7 @@ logs/
 ### Prerequisites
 
 - Python 3.9+
+- Node.js 18+ (for frontend dashboard)
 - Git installed and on PATH
 - A [GitHub Personal Access Token](https://github.com/settings/tokens) with `repo` scope
 - A [Google Gemini API Key](https://aistudio.google.com/app/apikey)
@@ -149,6 +182,16 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 Server starts at: `http://127.0.0.1:8000`  
 Interactive API docs at: `http://127.0.0.1:8000/docs`
+
+### Step 6 — Run the Frontend (optional but recommended)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend starts at: `http://127.0.0.1:5173`
 
 ---
 
