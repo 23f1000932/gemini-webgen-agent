@@ -26,48 +26,50 @@ export default function ResultCard({ result, onReset }) {
 
   if (isDone) {
     return (
-      <section className="mt-4 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-5 md:p-6">
-        <h3 className="text-xl font-semibold text-emerald-100">Deployment Live</h3>
-        <div className="mt-3 space-y-2 text-sm text-slate-200">
+      <section className="mt-4 border-4 border-neo-ink bg-[#9df3c4] p-5 shadow-neoMd md:p-6">
+        <h3 className="inline-block -rotate-1 border-4 border-neo-ink bg-neo-secondary px-3 py-1 text-xl font-black uppercase">
+          Deployment Live
+        </h3>
+        <div className="mt-3 space-y-2 text-sm font-bold text-neo-ink">
           <p>
             Pages URL:{' '}
-            <a href={result.pages_url} target="_blank" rel="noreferrer" className="text-indigo-300 underline">
+            <a href={result.pages_url} target="_blank" rel="noreferrer" className="underline decoration-2">
               {result.pages_url}
             </a>
           </p>
           <p>
             Repo URL:{' '}
-            <a href={result.repo_url} target="_blank" rel="noreferrer" className="text-indigo-300 underline">
+            <a href={result.repo_url} target="_blank" rel="noreferrer" className="underline decoration-2">
               {result.repo_url}
             </a>
           </p>
           <p>
             Commit:{' '}
-            <span className="rounded bg-[#0a1325] px-2 py-1 font-mono text-xs text-slate-100">{shortSha(result.commit_sha)}</span>
+            <span className="border-2 border-neo-ink bg-white px-2 py-1 font-mono text-xs">{shortSha(result.commit_sha)}</span>
           </p>
         </div>
 
-        <p className="mt-3 text-xs text-slate-400">Preview may take ~30s to load while GitHub Pages propagates.</p>
+        <p className="mt-3 text-xs font-bold">Preview may take ~30s to load while GitHub Pages propagates.</p>
         <iframe
           title="Deployment Preview"
           src={result.pages_url}
-          className="mt-3 h-80 w-full rounded-xl border border-slate-700 bg-white"
+          className="mt-3 h-80 w-full border-4 border-neo-ink bg-white"
         />
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={copyUrl}
-            className="rounded-xl border border-white/15 bg-white/[0.03] px-3 py-2 text-sm text-slate-100 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+            className="neo-button bg-white text-sm"
             disabled={!canUseClipboard}
           >
             {copyState === 'success' ? 'Copied!' : 'Copy URL'}
           </button>
-          {copyState === 'error' ? <p className="self-center text-xs text-rose-300">Clipboard permission denied.</p> : null}
+          {copyState === 'error' ? <p className="self-center text-xs font-bold">Clipboard permission denied.</p> : null}
           <button
             type="button"
             onClick={onReset}
-            className="rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-500 px-3.5 py-2 text-sm font-medium text-white transition hover:from-cyan-400 hover:to-indigo-400"
+            className="neo-button bg-neo-accent text-sm"
           >
             Deploy Another
           </button>
@@ -78,13 +80,13 @@ export default function ResultCard({ result, onReset }) {
 
   if (result?.status === 'failed') {
     return (
-      <section className="mt-4 rounded-2xl border border-rose-400/40 bg-rose-500/10 p-5 md:p-6">
-        <h3 className="text-lg font-semibold text-rose-100">Deployment Failed</h3>
-        <p className="mt-2 text-sm text-rose-100">{result.error || 'Unknown error from backend.'}</p>
+      <section className="mt-4 border-4 border-neo-ink bg-neo-accent p-5 shadow-neoMd md:p-6">
+        <h3 className="text-lg font-black uppercase">Deployment Failed</h3>
+        <p className="mt-2 text-sm font-bold">{result.error || 'Unknown error from backend.'}</p>
         <button
           type="button"
           onClick={onReset}
-          className="mt-4 rounded-xl bg-rose-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-rose-500"
+          className="neo-button mt-4 bg-neo-secondary text-sm"
         >
           Try Again
         </button>

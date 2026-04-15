@@ -61,7 +61,7 @@ export default function FileUploadZone({ attachments, onAddAttachments, onRemove
 
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-slate-100">Attachments</label>
+      <label className="mb-2 block text-sm font-black uppercase tracking-widest">Attachments</label>
       <div
         onDragOver={(event) => {
           event.preventDefault()
@@ -73,16 +73,16 @@ export default function FileUploadZone({ attachments, onAddAttachments, onRemove
           setIsDragging(false)
           await processFiles(event.dataTransfer.files)
         }}
-        className={`rounded-2xl border border-dashed p-6 text-center transition ${
-          isDragging ? 'border-cyan-300/60 bg-cyan-400/10' : 'border-white/15 bg-[#0d1629]/70'
+        className={`border-4 border-dashed border-neo-ink p-6 text-center transition duration-100 ease-linear ${
+          isDragging ? 'bg-neo-secondary' : 'bg-neo-bg'
         }`}
       >
-        <p className="text-sm text-slate-200">Drag and drop images, CSV, or Markdown files</p>
-        <p className="mt-1 text-xs text-slate-400">.png, .jpg, .webp, .csv, .md</p>
+        <p className="text-sm font-bold">Drag and drop images, CSV, or Markdown files</p>
+        <p className="mt-1 text-xs font-bold">.png, .jpg, .webp, .csv, .md</p>
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="mt-3 rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2 text-sm text-slate-100 transition hover:bg-white/[0.08]"
+          className="neo-button mt-3 bg-neo-secondary text-sm"
         >
           Choose files
         </button>
@@ -101,29 +101,29 @@ export default function FileUploadZone({ attachments, onAddAttachments, onRemove
         />
       </div>
 
-      {error ? <p className="mt-2 text-sm text-rose-400">{error}</p> : null}
+      {error ? <p className="mt-2 border-4 border-neo-ink bg-neo-accent px-3 py-2 text-sm font-bold">{error}</p> : null}
 
       {attachments.length > 0 ? (
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {attachments.map((file, index) => (
             <li
               key={`${file.name}-${index}`}
-              className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-2.5"
+              className="flex items-center gap-3 border-4 border-neo-ink bg-white p-2.5 shadow-neoSm"
             >
               {file.isImage ? (
-                <img src={file.url} alt={file.name} className="h-12 w-12 rounded-md object-cover" />
+                <img src={file.url} alt={file.name} className="h-12 w-12 border-2 border-neo-ink object-cover" />
               ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[#13203b] text-xs text-slate-300">
+                  <div className="flex h-12 w-12 items-center justify-center border-2 border-neo-ink bg-neo-muted text-xs font-black">
                     FILE
                   </div>
                 )}
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-slate-200">{file.name}</p>
+                <p className="truncate text-sm font-bold text-neo-ink">{file.name}</p>
               </div>
                 <button
                   type="button"
                   onClick={() => onRemoveAttachment(index)}
-                  className="rounded-md border border-white/15 px-2 py-1 text-xs text-slate-300 transition hover:bg-white/[0.06]"
+                  className="border-2 border-neo-ink bg-white px-2 py-1 text-xs font-bold uppercase transition hover:bg-neo-accent"
                 >
                   Remove
                 </button>

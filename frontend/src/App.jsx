@@ -49,6 +49,10 @@ function resolveBackendUrl(value) {
 function App() {
   const { settings, draft, setDraft, hasUnsavedChanges, saveSettings, resetDraft } = useSettings()
   const [showSettings, setShowSettings] = useState(false)
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'light'
+    return window.localStorage.getItem('webgen-theme') || 'light'
+  })
   const [submitError, setSubmitError] = useState('')
   const [taskState, setTaskState] = useState({
     stage: 'idle',
@@ -157,6 +161,11 @@ function App() {
     }
   }, [taskState.stage, result])
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    window.localStorage.setItem('webgen-theme', theme)
+  }, [theme])
+
   const resetTask = () => {
     setTaskState({ stage: 'idle', taskId: '', result: null })
     setSubmitError('')
@@ -164,33 +173,79 @@ function App() {
 
   return (
     <div className="min-h-full">
-      <Header healthStatus={healthStatus} healthMessage={healthMessage} onOpenSettings={() => setShowSettings(true)} />
+      <Header
+        healthStatus={healthStatus}
+        healthMessage={healthMessage}
+        onOpenSettings={() => setShowSettings(true)}
+        theme={theme}
+        onToggleTheme={() => setTheme((current) => (current === 'light' ? 'dark' : 'light'))}
+      />
 
-      <main className="mx-auto w-full max-w-4xl px-4 py-8 md:px-6 md:py-14">
+      <main className="mx-auto w-full max-w-6xl px-4 py-8 md:px-6 md:py-14">
         {taskState.stage === 'idle' ? (
           <>
-            <section className="mb-7 rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-[0_24px_80px_-50px_rgba(14,165,233,0.45)] backdrop-blur-xl md:p-8">
-              <h2 className="text-3xl font-semibold tracking-tight text-slate-50 md:text-4xl">What would you like to build?</h2>
-              <p className="mt-3 max-w-2xl text-sm text-slate-300/90 md:text-base">
-                Start with a task name and describe your app idea. WebGen Agent will generate, publish, and share the live URL.
+            <section className="relative mb-8 overflow-hidden border-4 border-neo-ink bg-white p-6 shadow-neoLg md:p-10">
+              <div className="absolute -right-10 -top-10 h-24 w-24 rotate-12 border-4 border-neo-ink bg-neo-accent" aria-hidden="true" />
+              <div className="absolute -bottom-8 left-10 h-16 w-16 -rotate-12 border-4 border-neo-ink bg-neo-muted" aria-hidden="true" />
+
+              <p className="inline-block -rotate-1 border-4 border-neo-ink bg-neo-secondary px-3 py-1 text-xs font-black uppercase tracking-[0.2em]">
+                Autonomous App Builder
               </p>
+              <h2 className="mt-4 max-w-4xl text-4xl font-black uppercase leading-[0.9] tracking-tight md:text-7xl">
+                Build, Deploy,
+                <span className="ml-2 inline-block rotate-1 border-4 border-neo-ink bg-neo-accent px-3">Ship</span>
+                <br />
+                With One Prompt
+              </h2>
+              <p className="mt-5 max-w-3xl border-l-4 border-neo-ink pl-4 text-base font-bold md:text-xl">
+                WebGen Agent receives your idea, generates your website with Gemini, pushes to GitHub, and makes it live on
+                GitHub Pages automatically.
+              </p>
+
+              <div className="mt-7 grid gap-4 md:grid-cols-3">
+                {[
+                  ['1', 'Reads your brief + attachments'],
+                  ['2', 'Generates production-ready files'],
+                  ['3', 'Deploys and returns live URL'],
+                ].map(([number, text]) => (
+                  <article
+                    key={number}
+                    className="border-4 border-neo-ink bg-neo-bg p-4 shadow-neoSm transition duration-200 ease-linear hover:-translate-y-1 hover:shadow-neoMd"
+                  >
+                    <p className="inline-block border-4 border-neo-ink bg-neo-muted px-2 py-0.5 text-sm font-black">{number}</p>
+                    <p className="mt-2 text-sm font-bold uppercase">{text}</p>
+                  </article>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById('task-form-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }}
+                className="neo-button mt-8 bg-neo-accent text-base"
+              >
+                Try the Agent
+              </button>
             </section>
 
-            <TaskForm
-              form={form}
-              onFieldChange={updateFormField}
-              onAddAttachments={addAttachments}
-              onRemoveAttachment={removeAttachment}
-              onSubmit={handleSubmit}
-              submitDisabled={false}
-              submitLabel="Generate and Deploy"
-              deployPreviewUrl={deployPreviewUrl}
-            />
-            {submitError ? (
-              <p className="mt-3 rounded-xl border border-rose-400/35 bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-100">
-                {submitError}
-              </p>
-            ) : null}
+            <section id="task-form-section">
+              <TaskForm
+                form={form}
+                onFieldChange={updateFormField}
+                onAddAttachments={addAttachments}
+                onRemoveAttachment={removeAttachment}
+                onSubmit={handleSubmit}
+                submitDisabled={false}
+                submitLabel="Generate and Deploy"
+                deployPreviewUrl={deployPreviewUrl}
+              />
+              {submitError ? (
+                <p className="mt-3 border-4 border-neo-ink bg-neo-accent px-3.5 py-2.5 text-sm font-bold text-neo-ink">
+                  {submitError}
+                </p>
+              ) : null}
+            </section>
           </>
         ) : (
           <ProgressView

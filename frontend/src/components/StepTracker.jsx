@@ -7,25 +7,27 @@ const STEPS = [
 ]
 
 function stepStyle(state) {
-  if (state === 'done') return 'border-emerald-400/35 bg-emerald-400/10 text-emerald-200'
-  if (state === 'active') return 'border-cyan-300/45 bg-cyan-400/10 text-cyan-200'
-  if (state === 'error') return 'border-rose-400/45 bg-rose-500/10 text-rose-200'
-  return 'border-white/10 bg-[#0d1629]/70 text-slate-400'
+  if (state === 'done') return 'bg-[#9df3c4] text-neo-ink'
+  if (state === 'active') return 'bg-neo-secondary text-neo-ink animate-pulse'
+  if (state === 'error') return 'bg-neo-accent text-neo-ink'
+  return 'bg-white text-neo-ink'
 }
 
 export default function StepTracker({ stepStates }) {
   return (
     <div>
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-300">Pipeline</h3>
+      <h3 className="mb-3 inline-block -rotate-1 border-4 border-neo-ink bg-neo-muted px-3 py-1 text-sm font-black uppercase tracking-widest">
+        Pipeline
+      </h3>
       <ol className="grid gap-2.5 md:grid-cols-5">
         {STEPS.map((label, index) => {
           const state = stepStates[index] ?? 'pending'
           return (
             <li
               key={label}
-              className={`rounded-2xl border px-3 py-3 text-sm transition ${stepStyle(state)} ${state === 'active' ? 'animate-pulse' : ''}`}
+              className={`border-4 border-neo-ink px-3 py-3 text-sm font-bold shadow-neoSm transition duration-200 ease-linear hover:-translate-y-1 hover:shadow-neoMd ${stepStyle(state)}`}
             >
-              <p className="font-medium">{label}</p>
+              <p className="font-black uppercase leading-tight">{label}</p>
               <p className="mt-1 text-xs capitalize">{state}</p>
             </li>
           )

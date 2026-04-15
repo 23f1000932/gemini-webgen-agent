@@ -53,23 +53,23 @@ export default function LogsPanel({ backendUrl }) {
   }, [logs, open])
 
   return (
-    <section className="mt-4 rounded-2xl border border-white/10 bg-[#0d1629]/70">
+    <section className="mt-4 border-4 border-neo-ink bg-white shadow-neoSm">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-slate-100 transition hover:bg-white/[0.05]"
+        className="flex w-full items-center justify-between bg-neo-muted px-4 py-3 text-left text-sm font-black uppercase tracking-wider text-neo-ink transition duration-100 hover:bg-[#b59ffb]"
       >
         <span>Live Logs</span>
-        <span className="text-xs text-slate-400">{open ? 'Hide' : 'Show'}</span>
+        <span className="text-xs">{open ? 'Hide' : 'Show'}</span>
       </button>
 
       {open ? (
-        <div className="border-t border-white/10 p-4">
-          {loading && !logs ? <div className="h-24 animate-pulse rounded bg-slate-800/70" /> : null}
-          {error ? <p className="mb-2 text-sm text-rose-400">{error}</p> : null}
+        <div className="border-t-4 border-neo-ink p-4">
+          {loading && !logs ? <div className="h-24 animate-pulse border-4 border-neo-ink bg-neo-secondary" /> : null}
+          {error ? <p className="mb-2 border-4 border-neo-ink bg-neo-accent px-3 py-2 text-sm font-bold">{error}</p> : null}
           <pre
             ref={scrollRef}
-            className="max-h-64 overflow-auto rounded-xl border border-white/10 bg-[#070d1a] p-3 font-mono text-xs leading-relaxed text-slate-300"
+            className="max-h-64 overflow-auto border-4 border-neo-ink bg-black p-3 font-mono text-xs leading-relaxed text-white"
           >
             {logs || 'No logs yet.'}
           </pre>

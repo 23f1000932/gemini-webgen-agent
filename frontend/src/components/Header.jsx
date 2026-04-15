@@ -1,17 +1,19 @@
 function statusColor(status) {
-  if (status === 'online') return 'bg-emerald-400'
-  if (status === 'offline') return 'bg-rose-500'
-  return 'bg-slate-500'
+  if (status === 'online') return 'bg-[#00d084]'
+  if (status === 'offline') return 'bg-neo-accent'
+  return 'bg-neo-muted'
 }
 
-export default function Header({ healthStatus, healthMessage, onOpenSettings }) {
+export default function Header({ healthStatus, healthMessage, onOpenSettings, theme, onToggleTheme }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-white/10 bg-[#090f1d]/75 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4 md:px-6">
+    <header className="sticky top-0 z-20 border-b-4 border-neo-ink bg-neo-bg">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold tracking-tight text-slate-50 md:text-xl">WebGen Agent</h1>
+          <h1 className="-rotate-1 border-4 border-neo-ink bg-neo-secondary px-3 py-1 text-lg font-black uppercase tracking-tight md:text-2xl">
+            WebGen Agent
+          </h1>
           <div
-            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-2.5 py-1 text-xs text-slate-300"
+            className="inline-flex items-center gap-2 rounded-full border-4 border-neo-ink bg-white px-3 py-1 text-xs font-black uppercase tracking-wider"
             title={healthMessage}
           >
             <span className={`h-2.5 w-2.5 rounded-full ${statusColor(healthStatus)}`} />
@@ -21,14 +23,25 @@ export default function Header({ healthStatus, healthMessage, onOpenSettings }) 
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          className="rounded-xl border border-white/15 bg-white/[0.04] px-3.5 py-2 text-sm text-slate-100 transition hover:bg-white/[0.08]"
-          aria-label="Open settings"
-        >
-          Settings
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onToggleTheme}
+            className="neo-button bg-white text-sm"
+            aria-label="Toggle theme"
+            aria-pressed={theme === 'dark'}
+          >
+            {theme === 'dark' ? 'Light' : 'Dark'}
+          </button>
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="neo-button bg-neo-muted text-sm"
+            aria-label="Open settings"
+          >
+            Settings
+          </button>
+        </div>
       </div>
     </header>
   )

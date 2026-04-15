@@ -10,11 +10,11 @@ export default function ProgressView({
   onReset,
 }) {
   return (
-    <div className="space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-6 shadow-[0_24px_80px_-55px_rgba(14,165,233,0.35)] backdrop-blur-xl md:p-8">
+    <div className="neo-panel space-y-4 bg-white p-6 md:p-8">
       <StepTracker stepStates={stepStates} />
 
       {networkError ? (
-        <div className="rounded-xl border border-rose-400/35 bg-rose-500/10 p-3 text-sm text-rose-100">
+        <div className="border-4 border-neo-ink bg-neo-accent p-3 text-sm font-bold text-neo-ink">
           Polling error: {networkError}
         </div>
       ) : null}
